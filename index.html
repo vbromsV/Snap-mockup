@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Snap Mockup</title>
+  <meta name="description" content="Skapa mockup-bilder som ser ut som en mottagen snap.">
+  <meta name="theme-color" content="#111111">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Snap Mockup">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="app">
+    <!-- Förhandsvisning -->
+    <section id="stage">
+      <div id="frame">
+        <canvas id="canvas" aria-label="Förhandsvisning av bilden"></canvas>
+        <div id="hint" class="hint"></div>
+      </div>
+    </section>
+
+    <!-- Redigeringsmeny -->
+    <section id="sheet" class="open">
+      <button id="toggleMenu" class="sheet-handle" type="button">
+        <span class="grip"></span><span id="toggleLabel">Dölj meny</span>
+      </button>
+
+      <nav class="tabs" role="tablist">
+        <button class="tab active" data-tab="image" role="tab">🖼️ Bild</button>
+        <button class="tab" data-tab="text" role="tab">💬 Text</button>
+        <button class="tab" data-tab="ui" role="tab">👤 Profil</button>
+        <button class="tab" data-tab="save" role="tab">💾 Spara</button>
+      </nav>
+
+      <div class="panels">
+        <!-- BILD -->
+        <div class="panel active" data-panel="image">
+          <label class="btn primary file-btn">
+            Välj bild…
+            <input id="imageInput" type="file" accept="image/*" hidden>
+          </label>
+          <p class="help">Dra bilden med <b>ett finger</b> för att flytta den. Nyp med <b>två fingrar</b> för att zooma och rotera.</p>
+          <div class="row">
+            <button class="btn" id="fitCover" type="button">Fyll skärmen</button>
+            <button class="btn" id="fitContain" type="button">Visa hela</button>
+          </div>
+          <div class="row">
+            <button class="btn" id="rotLeft" type="button">⟲ 90°</button>
+            <button class="btn" id="rotRight" type="button">⟳ 90°</button>
+            <button class="btn" id="straighten" type="button">Räta upp</button>
+          </div>
+          <label class="field">
+            <span>Format</span>
+            <select id="formatSelect">
+              <option value="iphone">Modern mobil (iPhone, 9:19,5)</option>
+              <option value="classic">Klassisk (9:16)</option>
+            </select>
+          </label>
+        </div>
+
+        <!-- TEXT -->
+        <div class="panel" data-panel="text">
+          <p class="help">Dra en textrad upp eller ner direkt i bilden. Tryck på en rad för att redigera den.</p>
+          <div id="barList"></div>
+          <button class="btn primary" id="addBar" type="button">＋ Lägg till textrad</button>
+          <label class="field">
+            <span>Textstorlek</span>
+            <input id="textSize" type="range" min="30" max="80" step="1">
+          </label>
+        </div>
+
+        <!-- AVSÄNDARE / GRÄNSSNITT -->
+        <div class="panel" data-panel="ui">
+          <div class="avatar-row">
+            <canvas id="avatarPreview" width="120" height="120"></canvas>
+            <div class="grow">
+              <label class="btn file-btn">
+                Välj profilbild…
+                <input id="avatarInput" type="file" accept="image/*" hidden>
+              </label>
+              <button class="btn ghost" id="avatarClear" type="button">Ta bort profilbild</button>
+            </div>
+          </div>
+          <label class="field"><span>Namn</span><input id="senderName" type="text" autocomplete="off"></label>
+          <label class="field"><span>Tid sedan mottagen</span><input id="senderTime" type="text" autocomplete="off" placeholder="t.ex. 2 min"></label>
+          <label class="field"><span>Färg på profilcirkel</span><input id="avatarColor" type="color"></label>
+
+          <h3>Gränssnitt</h3>
+          <label class="switch"><input id="showStatus" type="checkbox"><span>Visa statusfält (klocka, batteri)</span></label>
+          <label class="field"><span>Klockslag</span><input id="clock" type="text" autocomplete="off" placeholder="14:32"></label>
+          <label class="field"><span>Batteri (%)</span><input id="battery" type="number" min="1" max="100"></label>
+          <label class="switch"><input id="showTop" type="checkbox"><span>Visa avsändare överst</span></label>
+          <label class="switch"><input id="showBottom" type="checkbox"><span>Visa svarsfält nederst</span></label>
+          <label class="field"><span>Text i svarsfältet</span><input id="placeholder" type="text" autocomplete="off"></label>
+        </div>
+
+        <!-- SPARA -->
+        <div class="panel" data-panel="save">
+          <p class="help">Bilden sparas i full upplösning, utan hjälplinjer.</p>
+          <button class="btn primary" id="shareBtn" type="button">📤 Dela / spara till Bilder</button>
+          <button class="btn" id="downloadBtn" type="button">⬇️ Ladda ner PNG</button>
+          <p class="help small">På iPhone: tryck <b>Dela / spara till Bilder</b> och välj <i>Spara bild</i>.</p>
+          <hr>
+          <button class="btn ghost danger" id="resetAll" type="button">Börja om från början</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
