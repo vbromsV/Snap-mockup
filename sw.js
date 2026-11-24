@@ -1,5 +1,5 @@
 // Enkel offline-cache. Hämtar alltid senaste versionen när nätet finns.
-const CACHE = 'snapmockup-v5';
+const CACHE = 'snapmockup-v6';
 const FILES = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 
