@@ -665,6 +665,20 @@
     });
   });
 
+  // Bild som delats till appen från en annan app (Android: Dela → Snap Mockup)
+  async function receiveSharedImage() {
+    if (!/[?&]shared=1/.test(location.search) || !('caches' in window)) return;
+    try {
+      const c = await caches.open('snapmockup-shared');
+      const res = await c.match('shared-image');
+      if (res) {
+        setMainImage(await res.blob());
+        await c.delete('shared-image');
+      }
+    } catch (err) { /* ignorera */ }
+    history.replaceState(null, '', location.pathname);
+  }
+
   // Klistra in en bild som kopierats (t.ex. från appen Bilder)
   $('#pasteBtn').addEventListener('click', async () => {
     try {
@@ -902,13 +916,14 @@
   renderBarList();
   drawAvatarPreview();
   setupCanvasSize();
+  receiveSharedImage();
   requestDraw();
 
   new ResizeObserver(() => layoutFrame()).observe(stage);
   window.addEventListener('resize', layoutFrame);
 
   // Gör appen installerbar och fungerande offline
-  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 })();

@@ -27,6 +27,8 @@ En liten webbapp för mobilen där du gör mockup-bilder som ser ut som en motta
 
 **Android (Chrome):** öppna adressen, tryck på menyn ⋮ och välj **Installera app** eller **Lägg till på startskärmen**.
 
+**Bilder på Android:** om bildväljaren säger att det inte finns några bilder (vanligt när bilderna bara ligger i molnet i Google Foto), öppna bilden i Google Foto, tryck **Dela** och välj **Snap Mockup**. Bilden öppnas då direkt i appen. Det fungerar bara när appen är installerad.
+
 Efter det öppnas appen i helskärm som en vanlig app och fungerar även utan internet.
 
 ## Filerna
