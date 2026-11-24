@@ -45,6 +45,14 @@
             Välj bild…
             <input id="imageInput" type="file" accept="image/*" hidden>
           </label>
+          <div class="row">
+            <label class="btn file-btn">
+              📁 Från Filer…
+              <input id="imageInputAny" type="file" hidden>
+            </label>
+            <button class="btn" id="pasteBtn" type="button">📋 Klistra in</button>
+          </div>
+          <p class="help small">Visar bildväljaren inga bilder? Välj <b>Från Filer</b> och sedan <i>Bildbibliotek</i>/<i>Bläddra</i>. Eller öppna bilden i appen Bilder, tryck Dela → <i>Kopiera</i> och tryck sedan <b>Klistra in</b> här.</p>
           <p class="help">Dra bilden med <b>ett finger</b> för att flytta den. Nyp med <b>två fingrar</b> för att zooma och rotera.</p>
           <div class="row">
             <button class="btn" id="fitCover" type="button">Fyll skärmen</button>
@@ -82,7 +90,7 @@
             <div class="grow">
               <label class="btn file-btn">
                 Välj profilbild…
-                <input id="avatarInput" type="file" accept="image/*" hidden>
+                <input id="avatarInput" type="file" hidden>
               </label>
               <button class="btn ghost" id="avatarClear" type="button">Ta bort profilbild</button>
             </div>

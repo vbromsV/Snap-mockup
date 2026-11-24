@@ -451,6 +451,10 @@
 
   function loadImageFile(file, cb) {
     if (!file) return;
+    if (file.type && !file.type.startsWith('image/')) {
+      alert('Filen verkar inte vara en bild. Välj en JPG, PNG eller HEIC.');
+      return;
+    }
     const url = URL.createObjectURL(file);
     const im = new Image();
     im.onload = () => cb(im, url);
@@ -644,8 +648,7 @@
   $('#toggleMenu').addEventListener('click', () => setMenu(!menuOpen));
 
   // ---------- Bild-fliken ----------
-  $('#imageInput').addEventListener('change', (e) => {
-    const file = e.target.files && e.target.files[0];
+  function setMainImage(file) {
     loadImageFile(file, (im, url) => {
       if (img && img._url) URL.revokeObjectURL(img._url);
       im._url = url;
@@ -654,8 +657,35 @@
       fitImage('cover');
       setTab('image');
     });
-    e.target.value = '';
+  }
+  ['#imageInput', '#imageInputAny'].forEach((sel) => {
+    $(sel).addEventListener('change', (e) => {
+      setMainImage(e.target.files && e.target.files[0]);
+      e.target.value = '';
+    });
   });
+
+  // Klistra in en bild som kopierats (t.ex. från appen Bilder)
+  $('#pasteBtn').addEventListener('click', async () => {
+    try {
+      if (!navigator.clipboard || !navigator.clipboard.read) throw new Error('nosupport');
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        const type = item.types.find((t) => t.startsWith('image/'));
+        if (type) { setMainImage(await item.getType(type)); return; }
+      }
+      alert('Det finns ingen bild i urklipp. Kopiera en bild först (i Bilder: Dela → Kopiera).');
+    } catch (err) {
+      alert('Kunde inte läsa urklipp här. Prova att kopiera bilden igen, eller använd "Från Filer".');
+    }
+  });
+  window.addEventListener('paste', (e) => {
+    const t = e.target;
+    if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT')) return;
+    const f = [...(e.clipboardData ? e.clipboardData.files : [])].find((x) => x.type.startsWith('image/'));
+    if (f) { e.preventDefault(); setMainImage(f); }
+  });
+
   $('#fitCover').addEventListener('click', () => fitImage('cover'));
   $('#fitContain').addEventListener('click', () => fitImage('contain'));
   const rotateBy = (deg) => {
