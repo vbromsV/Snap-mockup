@@ -658,7 +658,7 @@
       setTab('image');
     });
   }
-  ['#imageInput', '#imageInputAny'].forEach((sel) => {
+  ['#imageInput'].forEach((sel) => {
     $(sel).addEventListener('change', (e) => {
       setMainImage(e.target.files && e.target.files[0]);
       e.target.value = '';
@@ -679,20 +679,6 @@
     history.replaceState(null, '', location.pathname);
   }
 
-  // Klistra in en bild som kopierats (t.ex. från appen Bilder)
-  $('#pasteBtn').addEventListener('click', async () => {
-    try {
-      if (!navigator.clipboard || !navigator.clipboard.read) throw new Error('nosupport');
-      const items = await navigator.clipboard.read();
-      for (const item of items) {
-        const type = item.types.find((t) => t.startsWith('image/'));
-        if (type) { setMainImage(await item.getType(type)); return; }
-      }
-      alert('Det finns ingen bild i urklipp. Kopiera en bild först (i Bilder: Dela → Kopiera).');
-    } catch (err) {
-      alert('Kunde inte läsa urklipp här. Prova att kopiera bilden igen, eller använd "Från Filer".');
-    }
-  });
   window.addEventListener('paste', (e) => {
     const t = e.target;
     if (t && (t.tagName === 'TEXTAREA' || t.tagName === 'INPUT')) return;

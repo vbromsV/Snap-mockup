@@ -43,16 +43,8 @@
         <div class="panel active" data-panel="image">
           <label class="btn primary file-btn">
             Välj bild…
-            <input id="imageInput" type="file" hidden>
+            <input id="imageInput" type="file" accept="image/*" hidden>
           </label>
-          <div class="row web-only">
-            <label class="btn file-btn">
-              🖼️ Galleri…
-              <input id="imageInputAny" type="file" accept="image/*" hidden>
-            </label>
-            <button class="btn" id="pasteBtn" type="button">📋 Klistra in</button>
-          </div>
-          <p class="help small web-only">Tips: i väljaren, tryck <b>☰</b> uppe till vänster och välj <b>Google Foto</b>. Då ser du alla bilder sorterade som vanligt.</p>
           <p class="help">Dra bilden med <b>ett finger</b> för att flytta den. Nyp med <b>två fingrar</b> för att zooma och rotera.</p>
           <div class="row">
             <button class="btn" id="fitCover" type="button">Fyll skärmen</button>
@@ -90,7 +82,7 @@
             <div class="grow">
               <label class="btn file-btn">
                 Välj profilbild…
-                <input id="avatarInput" type="file" hidden>
+                <input id="avatarInput" type="file" accept="image/*" hidden>
               </label>
               <button class="btn ghost" id="avatarClear" type="button">Ta bort profilbild</button>
             </div>
@@ -116,7 +108,7 @@
           <p class="help small web-only">På iPhone: tryck <b>Dela / spara till Bilder</b> och välj <i>Spara bild</i>.</p>
           <hr>
           <button class="btn ghost danger" id="resetAll" type="button">Börja om från början</button>
-          <p class="help small" style="text-align:center">Version 9</p>
+          <p class="help small" style="text-align:center">Version 10</p>
         </div>
       </div>
     </section>
