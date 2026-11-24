@@ -11,6 +11,7 @@
   };
   const FONT = '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif';
   const STORE_KEY = 'snapmockup.v1';
+  const MAX_SIDE = 4096; // största bildstorlek som används (pixlar)
 
   const $ = (s) => document.querySelector(s);
   const canvas = $('#canvas');
@@ -457,7 +458,35 @@
     }
     const url = URL.createObjectURL(file);
     const im = new Image();
-    im.onload = () => cb(im, url);
+    im.onload = async () => {
+      // Mobilfoton kan vara enorma (50 MP). Chrome på Android kan rita så stora
+      // bilder fel, så vi skalar ner bilden till max 4096 px innan den används.
+      let out = im;
+      const w0 = im.naturalWidth, h0 = im.naturalHeight;
+      const ratio = w0 / h0;
+      const k = Math.min(1, MAX_SIDE / Math.max(w0, h0));
+      const tw = Math.max(1, Math.round(w0 * k)), th = Math.max(1, Math.round(h0 * k));
+      const ok = (b) => b && Math.abs(b.width / b.height - ratio) < 0.01;
+      if (window.createImageBitmap) {
+        try {
+          const opts = (w, h) => ({ imageOrientation: 'from-image', resizeWidth: w, resizeHeight: h, resizeQuality: 'high' });
+          let bmp = await createImageBitmap(file, opts(tw, th));
+          if (!ok(bmp)) { bmp.close(); bmp = await createImageBitmap(file, opts(th, tw)); }
+          if (ok(bmp)) out = bmp; else bmp.close();
+        } catch (e) { /* använd originalbilden */ }
+      }
+      if (out === im && k < 1) {
+        // reserv: skala ner med en vanlig canvas
+        try {
+          const cv = document.createElement('canvas');
+          cv.width = tw; cv.height = th;
+          cv.getContext('2d').drawImage(im, 0, 0, tw, th);
+          out = cv;
+        } catch (e) { /* använd originalbilden */ }
+      }
+      if (out !== im) { out.naturalWidth = out.width; out.naturalHeight = out.height; }
+      cb(out, url);
+    };
     im.onerror = () => { URL.revokeObjectURL(url); alert('Kunde inte läsa bilden. Prova en annan bild (JPG eller PNG).'); };
     im.src = url;
   }
