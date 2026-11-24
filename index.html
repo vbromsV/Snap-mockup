@@ -45,14 +45,14 @@
             Välj bild…
             <input id="imageInput" type="file" hidden>
           </label>
-          <div class="row">
+          <div class="row web-only">
             <label class="btn file-btn">
               🖼️ Galleri…
               <input id="imageInputAny" type="file" accept="image/*" hidden>
             </label>
             <button class="btn" id="pasteBtn" type="button">📋 Klistra in</button>
           </div>
-          <p class="help small">Tips: i väljaren, tryck <b>☰</b> uppe till vänster och välj <b>Google Foto</b>. Då ser du alla bilder sorterade som vanligt.</p>
+          <p class="help small web-only">Tips: i väljaren, tryck <b>☰</b> uppe till vänster och välj <b>Google Foto</b>. Då ser du alla bilder sorterade som vanligt.</p>
           <p class="help">Dra bilden med <b>ett finger</b> för att flytta den. Nyp med <b>två fingrar</b> för att zooma och rotera.</p>
           <div class="row">
             <button class="btn" id="fitCover" type="button">Fyll skärmen</button>
@@ -112,11 +112,11 @@
         <div class="panel" data-panel="save">
           <p class="help">Bilden sparas i full upplösning, utan hjälplinjer.</p>
           <button class="btn primary" id="shareBtn" type="button">📤 Dela / spara till Bilder</button>
-          <button class="btn" id="downloadBtn" type="button">⬇️ Ladda ner PNG</button>
-          <p class="help small">På iPhone: tryck <b>Dela / spara till Bilder</b> och välj <i>Spara bild</i>.</p>
+          <button class="btn" id="downloadBtn" type="button">⬇️ Spara i telefonen</button>
+          <p class="help small web-only">På iPhone: tryck <b>Dela / spara till Bilder</b> och välj <i>Spara bild</i>.</p>
           <hr>
           <button class="btn ghost danger" id="resetAll" type="button">Börja om från början</button>
-          <p class="help small" style="text-align:center">Version 8 · <a href="test.html" style="color:inherit">Testa bildväljare</a></p>
+          <p class="help small" style="text-align:center">Version 9</p>
         </div>
       </div>
     </section>

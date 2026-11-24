@@ -225,3 +225,6 @@ hr { border: 0; border-top: 1px solid var(--line); width: 100%; margin: 6px 0; }
   #sheet .panels { display: block; }
   .tabs { padding-top: 16px; }
 }
+
+/* Dölj sådant som bara behövs i webbversionen när appen körs som APK */
+.native .web-only { display: none !important; }

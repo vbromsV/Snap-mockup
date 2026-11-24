@@ -1,0 +1,48 @@
+# Bygger Android-appen (APK) automatiskt varje gång något laddas upp.
+# Färdig APK hamnar under "Releases" i repot.
+name: Bygg Android-app
+
+on:
+  push:
+    branches: [gh-pages]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+
+      - name: Kopiera in webbappen
+        run: |
+          mkdir -p android/app/src/main/assets/www
+          cp -r index.html style.css app.js icons android/app/src/main/assets/www/
+
+      - name: Bygg APK
+        working-directory: android
+        run: gradle assembleRelease --no-daemon
+
+      - name: Döp om filen
+        run: cp android/app/build/outputs/apk/release/app-release.apk snap-mockup.apk
+
+      - name: Lägg upp under Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.${{ github.run_number }}
+          name: Snap Mockup 1.${{ github.run_number }}
+          make_latest: true
+          files: snap-mockup.apk
+          body: |
+            Ladda ner **snap-mockup.apk** nedan och öppna filen på telefonen för att installera.

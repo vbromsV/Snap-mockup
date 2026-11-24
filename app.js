@@ -866,7 +866,25 @@
     return `snap-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.png`;
   };
 
+  // I Android-appen (APK) finns en brygga till telefonen
+  const native = window.SnapAndroid || null;
+  if (native) document.documentElement.classList.add('native');
+
+  function exportBase64() {
+    const { w, h } = F();
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    render(cv.getContext('2d'), true);
+    return cv.toDataURL('image/png').split(',')[1];
+  }
+
+  // Tar emot en bild som delats till Android-appen
+  window.snapLoadImageUrl = (url) => {
+    fetch(url).then((r) => r.blob()).then((b) => setMainImage(b)).catch(() => {});
+  };
+
   async function download() {
+    if (native) { native.saveImage(exportBase64()); return; }
     const blob = await exportBlob();
     if (!blob) return alert('Kunde inte skapa bilden.');
     const url = URL.createObjectURL(blob);
@@ -881,6 +899,7 @@
 
   $('#downloadBtn').addEventListener('click', download);
   $('#shareBtn').addEventListener('click', async () => {
+    if (native) { native.shareImage(exportBase64()); return; }
     const blob = await exportBlob();
     if (!blob) return alert('Kunde inte skapa bilden.');
     const file = new File([blob], fileName(), { type: 'image/png' });
@@ -923,7 +942,7 @@
   window.addEventListener('resize', layoutFrame);
 
   // Gör appen installerbar och fungerande offline
-  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  if (!native && 'serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 })();
