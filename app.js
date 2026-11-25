@@ -765,8 +765,8 @@
     requestDraw();
   }
 
-  // Gester fungerar när menyn är uppe, och för stickers/textrader även när den är nere.
-  const gesturesActive = () => menuOpen || tab === 'stickers' || tab === 'text';
+  // Gester fungerar i alla redigeringsflikar, även när menyn är nere.
+  const gesturesActive = () => menuOpen || tab === 'stickers' || tab === 'text' || tab === 'image';
 
   // Lyssna på hela ytan runt bilden, så att fingrarna får mer plats
   stage.addEventListener('pointerdown', (e) => {
@@ -901,6 +901,7 @@
     setMenu(!menuOpen);
     if (!menuOpen && tab === 'stickers' && selectedStickerId) showHint('Dra var som helst för att flytta · nyp för storlek & rotation');
     else if (!menuOpen && tab === 'text' && selectedBarId) showHint('Dra för att flytta textraden');
+    else if (!menuOpen && tab === 'image' && img) showHint('1 finger: flytta · 2 fingrar: flytta, zooma & rotera');
   });
 
   // ---------- Bild-fliken ----------
