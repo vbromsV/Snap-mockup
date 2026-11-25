@@ -1,7 +1,9 @@
 // Enkel offline-cache. Hämtar alltid senaste versionen när nätet finns.
-const CACHE = 'snapmockup-v11';
+const CACHE = 'snapmockup-v12';
 const FILES = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest',
-  'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
+  'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
+  'fonts/anton.woff2', 'fonts/bebasneue.woff2', 'fonts/pacifico.woff2', 'fonts/permanentmarker.woff2',
+  'fonts/caveat.woff2', 'fonts/playfairdisplay.woff2', 'fonts/courierprime.woff2'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));

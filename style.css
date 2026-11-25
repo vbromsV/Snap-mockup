@@ -112,7 +112,7 @@ body { overflow: hidden; }
 
 .tabs {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 6px;
   padding: 0 12px 8px;
 }
@@ -128,6 +128,8 @@ body { overflow: hidden; }
   cursor: pointer;
   white-space: nowrap;
 }
+.tab { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 12px; padding: 7px 2px; }
+.tab .ti { font-size: 18px; line-height: 1; }
 .tab.active { background: var(--accent); color: var(--accent-text); font-weight: 600; }
 
 .panels {
@@ -228,3 +230,36 @@ hr { border: 0; border-top: 1px solid var(--line); width: 100%; margin: 6px 0; }
 
 /* Dölj sådant som bara behövs i webbversionen när appen körs som APK */
 .native .web-only { display: none !important; }
+
+/* ---------- Stickers ---------- */
+.label { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.st-editor { display: flex; flex-direction: column; gap: 8px; background: var(--panel-2); border: 1px solid var(--accent); border-radius: 16px; padding: 10px; }
+.st-editor[hidden] { display: none; }
+#stTextOnly { display: flex; flex-direction: column; gap: 8px; }
+#stTextOnly[hidden] { display: none; }
+#stText {
+  font: inherit; font-size: 16px; color: var(--text); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; resize: none; min-height: 46px; width: 100%;
+}
+.chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; -webkit-overflow-scrolling: touch; }
+.chip {
+  flex: 0 0 auto; appearance: none; border: 1px solid var(--line); background: var(--panel); color: var(--text);
+  border-radius: 999px; padding: 8px 14px; font-size: 16px; cursor: pointer; white-space: nowrap;
+}
+.chip.active { background: var(--accent); color: var(--accent-text); border-color: transparent; }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.swatch { width: 34px; height: 34px; border-radius: 50%; border: 2px solid rgba(255,255,255,.25); padding: 0; cursor: pointer; }
+.swatch.active { outline: 3px solid var(--accent); outline-offset: 2px; }
+.swatches input[type=color] { width: 40px; height: 34px; border: 0; padding: 0; background: none; }
+.emoji-own { display: flex; gap: 8px; }
+.emoji-own input {
+  flex: 1; min-width: 0; font: inherit; font-size: 16px; color: var(--text); background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px;
+}
+.emoji-own .btn { flex: 0 0 auto; }
+.emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.emoji-grid button {
+  appearance: none; border: 0; background: transparent; font-size: 28px; line-height: 1; padding: 6px 0;
+  border-radius: 10px; cursor: pointer; font-family: "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+}
+.emoji-grid button:active { background: var(--panel-2); }

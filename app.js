@@ -5,9 +5,10 @@
   'use strict';
 
   // ---------- Grundinställningar ----------
+  // Pixel 9a: 1080 × 2424 pixlar (20:9)
   const FORMATS = {
-    iphone:  { w: 1179, h: 2556, topInset: 150, bottomInset: 80 },
-    classic: { w: 1080, h: 1920, topInset: 70,  bottomInset: 30 },
+    pixel:   { w: 1080, h: 2424, topInset: 118, bottomInset: 48 },
+    classic: { w: 1080, h: 1920, topInset: 90,  bottomInset: 30 },
   };
   const FONT = '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif';
   const STORE_KEY = 'snapmockup.v1';
@@ -24,8 +25,9 @@
   const newBar = (text = '', y = 0.62) => ({ id: uid++, text, y });
 
   const defaults = () => ({
-    format: 'iphone',
+    format: 'pixel',
     bars: [newBar('Skriv din text här', 0.62)],
+    stickers: [],
     textSize: 46,
     sender: { name: 'Alex', time: '2 min', color: '#f7c948', avatar: null },
     ui: {
@@ -39,6 +41,7 @@
   let tab = 'image';
   let menuOpen = true;
   let selectedBarId = state.bars[0] ? state.bars[0].id : null;
+  let selectedStickerId = null;
 
   let img = null;            // uppladdad bild
   let imgT = null;           // { x, y, s, r } – mittpunkt, skala, rotation (radianer)
@@ -61,8 +64,9 @@
         sender: { ...d.sender, ...(s.sender || {}) },
         ui: { ...d.ui, ...(s.ui || {}) },
         bars: Array.isArray(s.bars) ? s.bars.map(b => ({ id: uid++, text: String(b.text || ''), y: +b.y || 0.5 })) : d.bars,
+        stickers: Array.isArray(s.stickers) ? s.stickers.map(cleanSticker).filter(Boolean) : [],
       };
-      if (!FORMATS[state.format]) state.format = 'iphone';
+      if (!FORMATS[state.format]) state.format = 'pixel';
       selectedBarId = state.bars[0] ? state.bars[0].id : null;
       if (state.sender.avatar) {
         const a = new Image();
@@ -132,6 +136,9 @@
 
     // Textrader
     drawBars(c, W, H, u, forExport);
+
+    // Stickers (emoji och fri text)
+    drawStickers(c, W, H, u, forExport);
 
     // Gränssnitt (ovanpå)
     const topY = drawStatusBar(c, W, H, u);
@@ -203,61 +210,203 @@
     }
   }
 
-  // Statusfält: klocka, mottagning, wifi, batteri. Returnerar y där headern börjar.
+  // ---------- Stickers ----------
+  // Typsnitt som finns inbakade i appen (mappen fonts/, fri licens OFL)
+  const STICKER_FONTS = [
+    { id: 'sans',     label: 'Klassisk', family: FONT,                  weight: 800, style: 'normal' },
+    { id: 'anton',    label: 'Rubrik',   family: '"Anton"',             weight: 400, style: 'normal', file: 'anton' },
+    { id: 'bebas',    label: 'Smal',     family: '"Bebas Neue"',        weight: 400, style: 'normal', file: 'bebasneue' },
+    { id: 'pacifico', label: 'Retro',    family: '"Pacifico"',          weight: 400, style: 'normal', file: 'pacifico' },
+    { id: 'marker',   label: 'Tusch',    family: '"Permanent Marker"',  weight: 400, style: 'normal', file: 'permanentmarker' },
+    { id: 'caveat',   label: 'Handskrift', family: '"Caveat"',          weight: 700, style: 'normal', file: 'caveat' },
+    { id: 'playfair', label: 'Elegant',  family: '"Playfair Display"',  weight: 700, style: 'italic', file: 'playfairdisplay' },
+    { id: 'courier',  label: 'Skrivmaskin', family: '"Courier Prime"',  weight: 700, style: 'normal', file: 'courierprime' },
+  ];
+  const STICKER_STYLES = [
+    { id: 'plain',   label: 'Vanlig' },
+    { id: 'outline', label: 'Kontur' },
+    { id: 'label',   label: 'Etikett' },
+  ];
+  const EMOJI_FONT = '"Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
+  const fontById = (id) => STICKER_FONTS.find((f) => f.id === id) || STICKER_FONTS[0];
+
+  // Ladda typsnitten och rita om när de är klara
+  if (window.FontFace && document.fonts) {
+    STICKER_FONTS.filter((f) => f.file).forEach((f) => {
+      const face = new FontFace(f.family.replace(/"/g, ''), `url(fonts/${f.file}.woff2)`, { weight: String(f.weight), style: f.style });
+      face.load().then((ff) => { document.fonts.add(ff); requestDraw(); }).catch(() => {});
+    });
+  }
+
+  function cleanSticker(o) {
+    if (!o || (o.kind !== 'emoji' && o.kind !== 'text')) return null;
+    return {
+      id: uid++,
+      kind: o.kind,
+      text: String(o.text || ''),
+      x: isFinite(o.x) ? +o.x : 0.5,
+      y: isFinite(o.y) ? +o.y : 0.5,
+      s: isFinite(o.s) && o.s > 0 ? +o.s : 1,
+      r: isFinite(o.r) ? +o.r : 0,
+      font: fontById(o.font).id,
+      color: /^#[0-9a-f]{6}$/i.test(o.color || '') ? o.color : '#ffffff',
+      style: STICKER_STYLES.some((x) => x.id === o.style) ? o.style : 'outline',
+    };
+  }
+
+  function stickerFont(st, u) {
+    if (st.kind === 'emoji') return { css: `${150 * u}px ${EMOJI_FONT}`, size: 150 * u };
+    const f = fontById(st.font);
+    const size = 96 * u;
+    return { css: `${f.style} ${f.weight} ${size}px ${f.family}`, size };
+  }
+
+  // Ritar en sticker i sitt eget koordinatsystem (mitt i 0,0) och sparar dess storlek
+  function drawOneSticker(c, st, u) {
+    const { css, size } = stickerFont(st, u);
+    c.font = css;
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    const lines = (st.text || ' ').split('\n');
+    const lh = size * (st.kind === 'emoji' ? 1.1 : 1.18);
+    const w = Math.max(...lines.map((l) => c.measureText(l || ' ').width), size * 0.4);
+    const h = lines.length * lh;
+    let bw = w, bh = h;
+
+    if (st.kind === 'text' && st.style === 'label') {
+      const px = size * 0.38, py = size * 0.16;
+      bw = w + px * 2; bh = h + py * 2;
+      c.fillStyle = st.color;
+      roundRect(c, -bw / 2, -bh / 2, bw, bh, size * 0.3);
+      c.fill();
+    }
+
+    lines.forEach((ln, i) => {
+      const y = -h / 2 + lh * i + lh / 2 + size * 0.04;
+      if (st.kind === 'emoji') {
+        c.fillText(ln, 0, y);
+        return;
+      }
+      if (st.style === 'outline') {
+        c.lineJoin = 'round';
+        c.lineWidth = size * 0.14;
+        c.strokeStyle = readableOn(st.color) === '#111' ? 'rgba(0,0,0,0.9)' : 'rgba(255,255,255,0.95)';
+        c.strokeText(ln, 0, y);
+        c.fillStyle = st.color;
+        c.fillText(ln, 0, y);
+      } else if (st.style === 'label') {
+        c.fillStyle = readableOn(st.color);
+        c.fillText(ln, 0, y);
+      } else {
+        c.save();
+        c.shadowColor = 'rgba(0,0,0,0.45)';
+        c.shadowBlur = size * 0.08;
+        c.shadowOffsetY = size * 0.02;
+        c.fillStyle = st.color;
+        c.fillText(ln, 0, y);
+        c.restore();
+      }
+    });
+    st._w = bw;
+    st._h = bh;
+  }
+
+  function drawStickers(c, W, H, u, forExport) {
+    for (const st of state.stickers) {
+      if (!st.text.trim()) { st._w = st._h = 0; if (forExport) continue; }
+      c.save();
+      c.translate(st.x * W, st.y * H);
+      c.rotate(st.r);
+      c.scale(st.s, st.s);
+      drawOneSticker(c, st, u);
+      if (!forExport && menuOpen && tab === 'stickers' && st.id === selectedStickerId) {
+        const pad = 16 * u;
+        const bw = Math.max(st._w, 60 * u) + pad * 2, bh = Math.max(st._h, 60 * u) + pad * 2;
+        c.lineWidth = 4 * u / st.s;
+        c.setLineDash([16 * u / st.s, 12 * u / st.s]);
+        c.strokeStyle = 'rgba(255,252,0,0.95)';
+        c.strokeRect(-bw / 2, -bh / 2, bw, bh);
+      }
+      c.restore();
+    }
+  }
+
+  // Vilken sticker ligger under punkten p? (överst först)
+  function stickerAt(p) {
+    const { w: W, h: H } = F();
+    const u = W / 1080;
+    for (let i = state.stickers.length - 1; i >= 0; i--) {
+      const st = state.stickers[i];
+      const dx = p.x - st.x * W, dy = p.y - st.y * H;
+      const cos = Math.cos(-st.r), sin = Math.sin(-st.r);
+      const lx = (dx * cos - dy * sin) / st.s;
+      const ly = (dx * sin + dy * cos) / st.s;
+      const pad = 30 * u / st.s;
+      const hw = Math.max(st._w || 0, 60 * u) / 2 + pad;
+      const hh = Math.max(st._h || 0, 60 * u) / 2 + pad;
+      if (Math.abs(lx) <= hw && Math.abs(ly) <= hh) return st;
+    }
+    return null;
+  }
+
+  const selectedSticker = () => state.stickers.find((x) => x.id === selectedStickerId) || null;
+
+  // Statusfält i Android-stil: klocka till vänster, wifi, mobilnät och batteri till höger.
+  // Returnerar y där avsändarraden börjar.
   function drawStatusBar(c, W, H, u) {
-    const f = F();
-    const inset = f.topInset * u;
+    const inset = F().topInset * u;
     if (!state.ui.status) return inset;
-    const cy = state.format === 'iphone' ? inset * 0.45 : inset * 0.55;
+    const cy = inset * 0.5;
     c.save();
     c.fillStyle = '#fff';
-    c.shadowColor = 'rgba(0,0,0,0.35)';
-    c.shadowBlur = 6 * u;
+    c.strokeStyle = '#fff';
+    c.shadowColor = 'rgba(0,0,0,0.3)';
+    c.shadowBlur = 5 * u;
     c.textBaseline = 'middle';
-    c.textAlign = 'center';
-    c.font = `600 ${(state.format === 'iphone' ? 50 : 40) * u}px ${FONT}`;
-    c.fillText(state.ui.clock || '', state.format === 'iphone' ? 170 * u : 110 * u, cy);
+    c.textAlign = 'left';
+    c.font = `500 ${40 * u}px "Roboto", "Google Sans", ${FONT}`;
+    c.fillText(state.ui.clock || '', 64 * u, cy + 1 * u);
 
-    // Höger sida, ritas från höger till vänster
-    let x = W - (state.format === 'iphone' ? 80 : 50) * u;
-    const k = state.format === 'iphone' ? 1 : 0.85;
-    // Batteri
-    const bw = 70 * u * k, bh = 34 * u * k;
+    let x = W - 56 * u;
+    // Batteri (liggande, rundat) med procent till vänster
+    const bw = 52 * u, bh = 27 * u;
     const bx = x - bw, by = cy - bh / 2;
-    c.shadowBlur = 0;
-    c.globalAlpha = 0.45;
-    roundRect(c, bx, by, bw, bh, 9 * u * k); c.fill();
-    c.globalAlpha = 1;
-    roundRect(c, bx + bw + 3 * u, cy - 7 * u * k, 5 * u * k, 14 * u * k, 2 * u); c.globalAlpha = 0.45; c.fill(); c.globalAlpha = 1;
     const pct = Math.max(1, Math.min(100, +state.ui.battery || 0)) / 100;
+    c.shadowBlur = 0;
+    c.globalAlpha = 0.4;
+    roundRect(c, bx, by, bw, bh, 8 * u); c.fill();
+    roundRect(c, bx + bw + 2 * u, cy - 6 * u, 4 * u, 12 * u, 2 * u); c.fill();
+    c.globalAlpha = 1;
     c.save();
-    roundRect(c, bx, by, bw, bh, 9 * u * k); c.clip();
-    c.fillStyle = pct <= 0.2 ? '#ff3b30' : '#fff';
+    roundRect(c, bx, by, bw, bh, 8 * u); c.clip();
+    c.fillStyle = pct <= 0.15 ? '#ff5449' : '#fff';
     c.fillRect(bx, by, bw * pct, bh);
     c.restore();
-    x = bx - 22 * u * k;
+    c.font = `500 ${33 * u}px "Roboto", "Google Sans", ${FONT}`;
+    c.textAlign = 'right';
+    c.shadowBlur = 5 * u;
+    c.fillText(Math.round(pct * 100) + '%', bx - 12 * u, cy + 1 * u);
+    x = bx - 12 * u - c.measureText('100%').width - 20 * u;
+    c.shadowBlur = 0;
 
-    // Wifi
-    c.strokeStyle = '#fff';
-    c.lineCap = 'round';
-    c.lineWidth = 7 * u * k;
-    const wx = x - 26 * u * k, wy = cy + 16 * u * k;
-    for (let i = 0; i < 3; i++) {
-      const r = (12 + i * 13) * u * k;
-      c.beginPath();
-      if (i === 0) { c.arc(wx, wy - 2 * u, 6 * u * k, 0, Math.PI * 2); c.fill(); continue; }
-      c.arc(wx, wy, r, -Math.PI * 0.75, -Math.PI * 0.25);
-      c.stroke();
-    }
-    x = wx - 50 * u * k;
+    // Mobilnät: fylld triangel
+    const ss = 34 * u;
+    c.beginPath();
+    c.moveTo(x, cy - ss / 2);
+    c.lineTo(x, cy + ss / 2);
+    c.lineTo(x - ss, cy + ss / 2);
+    c.closePath();
+    c.fill();
+    x -= ss + 18 * u;
 
-    // Mottagning (4 staplar)
-    const sw = 9 * u * k, gap = 5 * u * k;
-    for (let i = 0; i < 4; i++) {
-      const sh = (12 + i * 7) * u * k;
-      const sx = x - (4 - i) * (sw + gap);
-      roundRect(c, sx, cy + 17 * u * k - sh, sw, sh, 2.5 * u); c.fill();
-    }
+    // Wifi: fylld solfjäder
+    const wr = 34 * u;
+    const wx = x - wr * 0.75, wy = cy + ss / 2;
+    c.beginPath();
+    c.moveTo(wx, wy);
+    c.arc(wx, wy, wr, -Math.PI * 0.77, -Math.PI * 0.23);
+    c.closePath();
+    c.fill();
     c.restore();
     return inset;
   }
@@ -495,6 +644,8 @@
   const pointers = new Map();
   let gesture = null;
   let tapCandidate = null;
+  let lastGesture = null;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
   function toCanvas(e) {
     const rect = canvas.getBoundingClientRect();
@@ -531,6 +682,28 @@
           a0: Math.atan2(b.y - a.y, b.x - a.x),
         };
       }
+    } else if (tab === 'stickers') {
+      const { w: W, h: H } = F();
+      if (pts.length === 1) {
+        const st = stickerAt(pts[0]);
+        const wasSelected = !!st && st.id === selectedStickerId;
+        if (st && !wasSelected) selectSticker(st.id);
+        gesture = st ? { type: 'st-pan', st, p0: pts[0], x0: st.x * W, y0: st.y * H, wasSelected } : null;
+      } else {
+        const [a, b] = pts;
+        const m0 = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        // två fingrar: påverka vald sticker (eller den som ligger under fingrarna)
+        const st = selectedSticker() || stickerAt(m0);
+        if (st) {
+          if (st.id !== selectedStickerId) selectSticker(st.id);
+          gesture = {
+            type: 'st-pinch', st, m0,
+            t0: { x: st.x * W, y: st.y * H, s: st.s, r: st.r },
+            d0: Math.hypot(b.x - a.x, b.y - a.y) || 1,
+            a0: Math.atan2(b.y - a.y, b.x - a.x),
+          };
+        }
+      }
     } else if (tab === 'text' && pts.length === 1) {
       const bar = barAt(pts[0]);
       if (bar) {
@@ -564,6 +737,26 @@
       imgT.y = m.y + k * (vx * sin + vy * cos);
       imgT.s = Math.max(0.01, t0.s * k);
       imgT.r = t0.r + da;
+    } else if (gesture.type === 'st-pan' && pts.length >= 1) {
+      const p = pts[0];
+      const { w: W } = F();
+      gesture.st.x = clamp((gesture.x0 + p.x - gesture.p0.x) / W, -0.2, 1.2);
+      gesture.st.y = clamp((gesture.y0 + p.y - gesture.p0.y) / H, -0.2, 1.2);
+    } else if (gesture.type === 'st-pinch' && pts.length >= 2) {
+      const [a, b] = pts;
+      const { w: W } = F();
+      const m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      const k = (Math.hypot(b.x - a.x, b.y - a.y) || 1) / gesture.d0;
+      const da = Math.atan2(b.y - a.y, b.x - a.x) - gesture.a0;
+      const t0 = gesture.t0;
+      const vx = t0.x - gesture.m0.x, vy = t0.y - gesture.m0.y;
+      const cos = Math.cos(da), sin = Math.sin(da);
+      const ns = clamp(t0.s * k, 0.15, 12);
+      const kk = ns / t0.s; // håll punkten under fingrarna stilla även när skalan slår i taket
+      gesture.st.x = clamp((m.x + kk * (vx * cos - vy * sin)) / W, -0.2, 1.2);
+      gesture.st.y = clamp((m.y + kk * (vx * sin + vy * cos)) / H, -0.2, 1.2);
+      gesture.st.s = ns;
+      gesture.st.r = t0.r + da;
     } else if (gesture.type === 'bar' && pts.length >= 1) {
       const p = pts[0];
       const ny = gesture.y0 + (p.y - gesture.p0.y) / H;
@@ -594,7 +787,8 @@
   function endPointer(e) {
     const wasTracked = pointers.delete(e.pointerId);
     if (wasTracked) {
-      if (gesture && gesture.type === 'bar') persist();
+      if (gesture && (gesture.type === 'bar' || gesture.type.startsWith('st-'))) persist();
+      lastGesture = gesture;
       beginGesture(); // fortsätt smidigt med kvarvarande finger
     }
     if (e.type === 'pointerup' && tapCandidate && pointers.size === 0) {
@@ -606,8 +800,18 @@
   canvas.addEventListener('pointercancel', endPointer);
 
   function handleTap(p) {
-    if (!img) { $('#imageInput').click(); return; }
     if (!menuOpen) { setMenu(true); return; }
+    if (!img && tab === 'image') { $('#imageInput').click(); return; }
+    if (tab === 'stickers') {
+      const st = stickerAt(p);
+      if (!st) { selectSticker(null); return; }
+      // tryck på en redan vald text-sticker: redigera texten
+      if (st.kind === 'text' && lastGesture && lastGesture.st === st && lastGesture.wasSelected) {
+        const ta = $('#stText');
+        if (ta) { ta.focus(); ta.select(); }
+      }
+      return;
+    }
     if (tab === 'text') {
       const bar = barAt(p);
       if (bar) {
@@ -660,6 +864,7 @@
     document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.dataset.panel === t));
     if (t === 'image' && img) showHint('1 finger: flytta · 2 fingrar: zooma & rotera');
     if (t === 'text') showHint('Dra textraderna upp eller ner');
+    if (t === 'stickers' && state.stickers.length) showHint('1 finger: flytta · 2 fingrar: storlek & rotera');
     requestDraw();
     requestAnimationFrame(layoutFrame);
   }
@@ -818,6 +1023,154 @@
     requestDraw();
   });
 
+  // ---------- Stickers-fliken ----------
+  const EMOJIS = ('😂 🤣 😭 😍 🥰 😘 😎 🤩 😳 🥺 😱 🤯 😡 🤬 😴 🤤 ' +
+    '🙄 😏 🤔 🫠 😬 🤡 💀 👻 👀 🙈 🙏 👍 👎 👏 🙌 💪 ' +
+    '✌️ 🤞 🫶 ❤️ 🧡 💛 💚 💙 💜 🖤 💔 💯 🔥 ✨ ⭐ 🌟 ' +
+    '💥 💫 🎉 🎂 🍕 🍔 🍟 🍦 🍻 ☕ 🐶 🐱 🦄 🌈 ☀️ 🌙 ' +
+    '❄️ 🌸 🌹 ⚽ 🎮 🎵 📸 💸 🚗 ✈️ 🏖️ 🏠 ‼️ ❓ ✅ ❌').split(' ').filter(Boolean);
+  const COLORS = ['#ffffff', '#000000', '#fffc00', '#ff9500', '#ff3b30', '#ff2d92', '#af52de', '#0a84ff', '#32d7ff', '#34c759'];
+
+  function selectSticker(id) {
+    selectedStickerId = id;
+    renderStickerPanel();
+    requestDraw();
+  }
+
+  function addSticker(props) {
+    const n = state.stickers.length;
+    const st = cleanSticker({
+      x: 0.5 + ((n % 3) - 1) * 0.12, y: 0.42 + ((n % 4) - 1.5) * 0.06,
+      s: 1, r: 0, font: 'sans', color: '#ffffff', style: 'outline', ...props,
+    });
+    state.stickers.push(st);
+    if (tab !== 'stickers') setTab('stickers');
+    selectSticker(st.id);
+    persist();
+    return st;
+  }
+
+  function renderStickerPanel() {
+    const st = selectedSticker();
+    const ed = $('#stEditor');
+    ed.hidden = !st;
+    if (!st) return;
+    const isText = st.kind === 'text';
+    $('#stTextOnly').hidden = !isText;
+    if (!isText) return;
+    const ta = $('#stText');
+    if (document.activeElement !== ta) ta.value = st.text;
+    autoGrow(ta);
+    document.querySelectorAll('#stFonts .chip').forEach((b) => b.classList.toggle('active', b.dataset.id === st.font));
+    document.querySelectorAll('#stStyles .chip').forEach((b) => b.classList.toggle('active', b.dataset.id === st.style));
+    document.querySelectorAll('#stColors .swatch').forEach((b) => b.classList.toggle('active', b.dataset.color.toLowerCase() === st.color.toLowerCase()));
+    $('#stColorCustom').value = st.color;
+  }
+
+  function changeSelected(fn) {
+    const st = selectedSticker();
+    if (!st) return;
+    fn(st);
+    persist();
+    renderStickerPanel();
+    requestDraw();
+  }
+
+  // Bygg knapparna en gång
+  (function buildStickerUI() {
+    const grid = $('#emojiGrid');
+    EMOJIS.forEach((e) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = e;
+      b.addEventListener('click', () => addSticker({ kind: 'emoji', text: e }));
+      grid.appendChild(b);
+    });
+
+    const fonts = $('#stFonts');
+    STICKER_FONTS.forEach((f) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip';
+      b.dataset.id = f.id;
+      b.textContent = f.label;
+      b.style.fontFamily = f.family;
+      b.style.fontWeight = f.weight;
+      b.style.fontStyle = f.style;
+      b.addEventListener('click', () => changeSelected((st) => { st.font = f.id; }));
+      fonts.appendChild(b);
+    });
+
+    const styles = $('#stStyles');
+    STICKER_STYLES.forEach((x) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip';
+      b.dataset.id = x.id;
+      b.textContent = x.label;
+      b.addEventListener('click', () => changeSelected((st) => { st.style = x.id; }));
+      styles.appendChild(b);
+    });
+
+    const colors = $('#stColors');
+    COLORS.forEach((col) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'swatch';
+      b.dataset.color = col;
+      b.style.background = col;
+      b.title = col;
+      b.addEventListener('click', () => changeSelected((st) => { st.color = col; }));
+      colors.appendChild(b);
+    });
+    const custom = document.createElement('input');
+    custom.type = 'color';
+    custom.id = 'stColorCustom';
+    custom.title = 'Egen färg';
+    custom.addEventListener('input', () => changeSelected((st) => { st.color = custom.value; }));
+    colors.appendChild(custom);
+  })();
+
+  $('#addTextSticker').addEventListener('click', () => {
+    addSticker({ kind: 'text', text: 'Text' });
+    const ta = $('#stText');
+    ta.focus();
+    ta.select();
+  });
+  $('#stText').addEventListener('input', (e) => {
+    const st = selectedSticker();
+    if (!st) return;
+    st.text = e.target.value;
+    autoGrow(e.target);
+    persist();
+    requestDraw();
+  });
+  $('#emojiAdd').addEventListener('click', () => {
+    const v = $('#emojiInput').value.trim();
+    if (!v) return;
+    addSticker({ kind: 'emoji', text: v });
+    $('#emojiInput').value = '';
+  });
+  $('#emojiInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#emojiAdd').click(); });
+  $('#stDup').addEventListener('click', () => {
+    const st = selectedSticker();
+    if (st) addSticker({ ...st, x: st.x + 0.05, y: st.y + 0.04 });
+  });
+  $('#stFront').addEventListener('click', () => {
+    const st = selectedSticker();
+    if (!st) return;
+    state.stickers = state.stickers.filter((x) => x !== st).concat(st);
+    persist();
+    requestDraw();
+  });
+  $('#stDel').addEventListener('click', () => {
+    const st = selectedSticker();
+    if (!st) return;
+    state.stickers = state.stickers.filter((x) => x !== st);
+    persist();
+    selectSticker(null);
+  });
+
   // ---------- Avsändare-fliken ----------
   function bindText(sel, get, set) {
     const el = $(sel);
@@ -948,6 +1301,7 @@
   bindCheck('#showBottom', () => state.ui.bottom, v => state.ui.bottom = v);
 
   renderBarList();
+  renderStickerPanel();
   drawAvatarPreview();
   setupCanvasSize();
   receiveSharedImage();

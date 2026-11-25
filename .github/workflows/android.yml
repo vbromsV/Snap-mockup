@@ -28,7 +28,7 @@ jobs:
       - name: Kopiera in webbappen
         run: |
           mkdir -p android/app/src/main/assets/www
-          cp -r index.html style.css app.js icons android/app/src/main/assets/www/
+          cp -r index.html style.css app.js icons fonts android/app/src/main/assets/www/
 
       - name: Bygg APK
         working-directory: android

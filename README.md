@@ -5,9 +5,10 @@ En liten webbapp för mobilen där du gör mockup-bilder som ser ut som en motta
 ## Funktioner
 
 - **Bild:** ladda upp valfri bild. Dra med **ett finger** för att flytta den, och **nyp med två fingrar** för att zooma och rotera. Det finns också knappar för *Fyll skärmen*, *Visa hela*, rotera 90° och *Räta upp*.
-- **Text:** lägg till så många textband du vill. Dra dem upp och ner direkt i bilden och tryck på ett band för att redigera texten. Textstorleken går att ändra.
+- **Textrad:** lägg till så många textband du vill. Dra dem upp och ner direkt i bilden och tryck på ett band för att redigera texten. Textstorleken går att ändra.
+- **Stickers:** lägg till emoji (från listan eller ditt eget från tangentbordet) och fritt flytande text-stickers. Dra med ett finger, nyp med två för att ändra storlek och rotera. Text-stickers kan få typsnitt (8 st), stil (vanlig, kontur, etikett) och valfri färg.
 - **Profil:** namn, "tid sedan" (t.ex. *2 min*), profilbild eller en färgad cirkel med initial, klockslag och batteri i statusfältet. Varje del av gränssnittet kan visas eller döljas.
-- **Spara:** bilden blir en PNG i full upplösning (1179 × 2556 eller 1080 × 1920) utan hjälplinjer. På iPhone väljer du *Dela / spara till Bilder* och sedan *Spara bild*.
+- **Spara:** bilden blir en PNG i full upplösning (Pixel 9a: 1080 × 2424, eller klassisk 1080 × 1920) utan hjälplinjer. På iPhone väljer du *Dela / spara till Bilder* och sedan *Spara bild*.
 - **Dölj meny:** när menyn är nere ser du bilden större. Gesterna fungerar bara när menyn är uppe, så du kan titta utan att råka flytta något.
 - Dina inställningar (texter, namn, profilbild) sparas i webbläsaren till nästa gång. Själva bilden sparas inte.
 
@@ -54,3 +55,5 @@ Har du installerat appen på mobilen och ändrat något kan det behövas två om
 ## Tänk på
 
 Appen gör mockups, alltså låtsasbilder för film, skämt, design eller presentationer. Använd den inte för att lura någon eller utge dig för att vara någon annan. Gränssnittet är en egen tolkning och använder inga logotyper eller grafik från något företag.
+
+Typsnitten i mappen `fonts/` kommer från Google Fonts och har den fria licensen SIL Open Font License.

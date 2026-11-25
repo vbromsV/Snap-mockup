@@ -32,10 +32,11 @@
       </button>
 
       <nav class="tabs" role="tablist">
-        <button class="tab active" data-tab="image" role="tab">🖼️ Bild</button>
-        <button class="tab" data-tab="text" role="tab">💬 Text</button>
-        <button class="tab" data-tab="ui" role="tab">👤 Profil</button>
-        <button class="tab" data-tab="save" role="tab">💾 Spara</button>
+        <button class="tab active" data-tab="image" role="tab"><span class="ti">🖼️</span>Bild</button>
+        <button class="tab" data-tab="text" role="tab"><span class="ti">💬</span>Textrad</button>
+        <button class="tab" data-tab="stickers" role="tab"><span class="ti">😀</span>Stickers</button>
+        <button class="tab" data-tab="ui" role="tab"><span class="ti">👤</span>Profil</button>
+        <button class="tab" data-tab="save" role="tab"><span class="ti">💾</span>Spara</button>
       </nav>
 
       <div class="panels">
@@ -58,8 +59,8 @@
           <label class="field">
             <span>Format</span>
             <select id="formatSelect">
-              <option value="iphone">Modern mobil (iPhone, 9:19,5)</option>
-              <option value="classic">Klassisk (9:16)</option>
+              <option value="pixel">Pixel 9a (1080 × 2424)</option>
+              <option value="classic">Klassisk 9:16 (1080 × 1920)</option>
             </select>
           </label>
         </div>
@@ -76,6 +77,35 @@
         </div>
 
         <!-- AVSÄNDARE / GRÄNSSNITT -->
+        <div class="panel" data-panel="stickers">
+          <p class="help">Dra en sticker med <b>ett finger</b>. Nyp med <b>två fingrar</b> för att ändra storlek och rotera. Tryck på en vald text-sticker för att ändra texten.</p>
+          <button class="btn primary" id="addTextSticker" type="button">＋ Text-sticker</button>
+
+          <div id="stEditor" class="st-editor" hidden>
+            <div id="stTextOnly">
+              <textarea id="stText" rows="1" placeholder="Skriv text…"></textarea>
+              <div class="label">Typsnitt</div>
+              <div id="stFonts" class="chips"></div>
+              <div class="label">Stil</div>
+              <div id="stStyles" class="chips"></div>
+              <div class="label">Färg</div>
+              <div id="stColors" class="swatches"></div>
+            </div>
+            <div class="row">
+              <button class="btn" id="stDup" type="button">Kopiera</button>
+              <button class="btn" id="stFront" type="button">Överst</button>
+              <button class="btn danger" id="stDel" type="button">🗑 Ta bort</button>
+            </div>
+          </div>
+
+          <div class="label">Emoji – tryck för att lägga till</div>
+          <div class="emoji-own">
+            <input id="emojiInput" type="text" placeholder="Eget emoji från tangentbordet" autocomplete="off">
+            <button class="btn" id="emojiAdd" type="button">Lägg till</button>
+          </div>
+          <div id="emojiGrid" class="emoji-grid"></div>
+        </div>
+
         <div class="panel" data-panel="ui">
           <div class="avatar-row">
             <canvas id="avatarPreview" width="120" height="120"></canvas>
@@ -108,7 +138,7 @@
           <p class="help small web-only">På iPhone: tryck <b>Dela / spara till Bilder</b> och välj <i>Spara bild</i>.</p>
           <hr>
           <button class="btn ghost danger" id="resetAll" type="button">Börja om från början</button>
-          <p class="help small" style="text-align:center">Version 11</p>
+          <p class="help small" style="text-align:center">Version 12</p>
         </div>
       </div>
     </section>
