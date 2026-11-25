@@ -40,7 +40,7 @@
   let state = defaults();
   let tab = 'image';
   let menuOpen = true;
-  let selectedBarId = state.bars[0] ? state.bars[0].id : null;
+  let selectedBarId = null;
   let selectedStickerId = null;
 
   let img = null;            // uppladdad bild
@@ -67,7 +67,6 @@
         stickers: Array.isArray(s.stickers) ? s.stickers.map(cleanSticker).filter(Boolean) : [],
       };
       if (!FORMATS[state.format]) state.format = 'pixel';
-      selectedBarId = state.bars[0] ? state.bars[0].id : null;
       if (state.sender.avatar) {
         const a = new Image();
         a.onload = () => { avatarImg = a; drawAvatarPreview(); requestDraw(); };
@@ -199,7 +198,7 @@
         c.fillText(ln, W / 2, top + padY + lh * i + lh / 2 + size * 0.03);
       });
 
-      if (!forExport && menuOpen && tab === 'text' && bar.id === selectedBarId) {
+      if (!forExport && tab === 'text' && bar.id === selectedBarId) {
         c.save();
         c.strokeStyle = 'rgba(255,252,0,0.9)';
         c.lineWidth = 4 * u;
@@ -319,7 +318,7 @@
       c.rotate(st.r);
       c.scale(st.s, st.s);
       drawOneSticker(c, st, u);
-      if (!forExport && menuOpen && tab === 'stickers' && st.id === selectedStickerId) {
+      if (!forExport && tab === 'stickers' && st.id === selectedStickerId) {
         const pad = 16 * u;
         const bw = Math.max(st._w, 60 * u) + pad * 2, bh = Math.max(st._h, 60 * u) + pad * 2;
         c.lineWidth = 4 * u / st.s;
@@ -341,7 +340,7 @@
       const cos = Math.cos(-st.r), sin = Math.sin(-st.r);
       const lx = (dx * cos - dy * sin) / st.s;
       const ly = (dx * sin + dy * cos) / st.s;
-      const pad = 30 * u / st.s;
+      const pad = 45 * u / st.s;
       const hw = Math.max(st._w || 0, 60 * u) / 2 + pad;
       const hh = Math.max(st._h || 0, 60 * u) / 2 + pad;
       if (Math.abs(lx) <= hw && Math.abs(ly) <= hh) return st;
@@ -685,10 +684,12 @@
     } else if (tab === 'stickers') {
       const { w: W, h: H } = F();
       if (pts.length === 1) {
-        const st = stickerAt(pts[0]);
-        const wasSelected = !!st && st.id === selectedStickerId;
-        if (st && !wasSelected) selectSticker(st.id);
-        gesture = st ? { type: 'st-pan', st, p0: pts[0], x0: st.x * W, y0: st.y * H, wasSelected } : null;
+        const hit = stickerAt(pts[0]);
+        const wasSelected = !!hit && hit.id === selectedStickerId;
+        if (hit && !wasSelected) selectSticker(hit.id);
+        // inget under fingret? flytta den valda stickern ändå
+        const st = hit || selectedSticker();
+        gesture = st ? { type: 'st-pan', st, p0: pts[0], x0: st.x * W, y0: st.y * H, wasSelected, hit: !!hit } : null;
       } else {
         const [a, b] = pts;
         const m0 = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
@@ -705,7 +706,7 @@
         }
       }
     } else if (tab === 'text' && pts.length === 1) {
-      const bar = barAt(pts[0]);
+      const bar = barAt(pts[0]) || state.bars.find((b) => b.id === selectedBarId);
       if (bar) {
         if (selectedBarId !== bar.id) { selectedBarId = bar.id; renderBarList(); }
         gesture = { type: 'bar', bar, p0: pts[0], y0: bar.y };
@@ -749,12 +750,11 @@
       const k = (Math.hypot(b.x - a.x, b.y - a.y) || 1) / gesture.d0;
       const da = Math.atan2(b.y - a.y, b.x - a.x) - gesture.a0;
       const t0 = gesture.t0;
-      const vx = t0.x - gesture.m0.x, vy = t0.y - gesture.m0.y;
-      const cos = Math.cos(da), sin = Math.sin(da);
+      // Stickern växer och roterar kring sin egen mitt och följer med när fingrarna flyttas,
+      // så det spelar ingen roll var på skärmen man nyper.
       const ns = clamp(t0.s * k, 0.15, 12);
-      const kk = ns / t0.s; // håll punkten under fingrarna stilla även när skalan slår i taket
-      gesture.st.x = clamp((m.x + kk * (vx * cos - vy * sin)) / W, -0.2, 1.2);
-      gesture.st.y = clamp((m.y + kk * (vx * sin + vy * cos)) / H, -0.2, 1.2);
+      gesture.st.x = clamp((t0.x + m.x - gesture.m0.x) / W, -0.2, 1.2);
+      gesture.st.y = clamp((t0.y + m.y - gesture.m0.y) / H, -0.2, 1.2);
       gesture.st.s = ns;
       gesture.st.r = t0.r + da;
     } else if (gesture.type === 'bar' && pts.length >= 1) {
@@ -765,18 +765,22 @@
     requestDraw();
   }
 
-  canvas.addEventListener('pointerdown', (e) => {
+  // Gester fungerar när menyn är uppe, och för stickers/textrader även när den är nere.
+  const gesturesActive = () => menuOpen || tab === 'stickers' || tab === 'text';
+
+  // Lyssna på hela ytan runt bilden, så att fingrarna får mer plats
+  stage.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     const p = toCanvas(e);
     if (pointers.size === 0) tapCandidate = { cx: p.cx, cy: p.cy, t: Date.now(), p };
     else tapCandidate = null;
-    if (!menuOpen) return; // gester bara när menyn är uppe
-    try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+    if (!gesturesActive()) return;
+    try { stage.setPointerCapture(e.pointerId); } catch (_) {}
     pointers.set(e.pointerId, p);
     beginGesture();
   });
 
-  canvas.addEventListener('pointermove', (e) => {
+  stage.addEventListener('pointermove', (e) => {
     const p = toCanvas(e);
     if (tapCandidate && Math.hypot(p.cx - tapCandidate.cx, p.cy - tapCandidate.cy) > 8) tapCandidate = null;
     if (!pointers.has(e.pointerId)) return;
@@ -796,17 +800,21 @@
     }
     if (pointers.size === 0) tapCandidate = null;
   }
-  canvas.addEventListener('pointerup', endPointer);
-  canvas.addEventListener('pointercancel', endPointer);
+  stage.addEventListener('pointerup', endPointer);
+  stage.addEventListener('pointercancel', endPointer);
 
   function handleTap(p) {
-    if (!menuOpen) { setMenu(true); return; }
-    if (!img && tab === 'image') { $('#imageInput').click(); return; }
     if (tab === 'stickers') {
       const st = stickerAt(p);
-      if (!st) { selectSticker(null); return; }
+      if (!st) {
+        // tom yta: avmarkera (eller öppna menyn om inget var markerat)
+        if (selectedStickerId) selectSticker(null);
+        else if (!menuOpen) setMenu(true);
+        return;
+      }
       // tryck på en redan vald text-sticker: redigera texten
       if (st.kind === 'text' && lastGesture && lastGesture.st === st && lastGesture.wasSelected) {
+        if (!menuOpen) setMenu(true);
         const ta = $('#stText');
         if (ta) { ta.focus(); ta.select(); }
       }
@@ -814,14 +822,24 @@
     }
     if (tab === 'text') {
       const bar = barAt(p);
-      if (bar) {
-        selectedBarId = bar.id;
-        renderBarList();
+      if (!bar) {
+        if (selectedBarId) { selectedBarId = null; renderBarList(); requestDraw(); }
+        else if (!menuOpen) setMenu(true);
+        return;
+      }
+      const wasSelected = bar.id === selectedBarId;
+      selectedBarId = bar.id;
+      renderBarList();
+      requestDraw();
+      if (menuOpen || wasSelected) {
+        if (!menuOpen) setMenu(true);
         const ta = document.querySelector(`.bar-item[data-id="${bar.id}"] textarea`);
         if (ta) { ta.focus(); ta.scrollIntoView({ block: 'nearest' }); }
-        requestDraw();
       }
+      return;
     }
+    if (!menuOpen) { setMenu(true); return; }
+    if (!img && tab === 'image') { $('#imageInput').click(); return; }
   }
 
   // Mushjul på dator: zooma (håll Shift för att rotera)
@@ -879,7 +897,11 @@
     requestAnimationFrame(layoutFrame);
     requestDraw();
   }
-  $('#toggleMenu').addEventListener('click', () => setMenu(!menuOpen));
+  $('#toggleMenu').addEventListener('click', () => {
+    setMenu(!menuOpen);
+    if (!menuOpen && tab === 'stickers' && selectedStickerId) showHint('Dra var som helst för att flytta · nyp för storlek & rotation');
+    else if (!menuOpen && tab === 'text' && selectedBarId) showHint('Dra för att flytta textraden');
+  });
 
   // ---------- Bild-fliken ----------
   function setMainImage(file) {
@@ -982,7 +1004,7 @@
         del.title = 'Ta bort textrad';
         del.addEventListener('click', () => {
           state.bars = state.bars.filter(b => b.id !== bar.id);
-          if (selectedBarId === bar.id) selectedBarId = state.bars[0] ? state.bars[0].id : null;
+          if (selectedBarId === bar.id) selectedBarId = null;
           renderBarList();
           persist();
           requestDraw();
